@@ -11,9 +11,12 @@ Used GNU's Compiler Collection version 4.9.2 with the C++14 extension enabled.
 Basic usage is as follows:
 
 ```c++
+// Create a thread pool with 10 worker threads.
 ThreadPool pool(10);
 
+// Enqueue a closure -- referred to as a task.
 auto result = pool.enqueue([] { return 42; });
 
-cout << result.get() << endl;
+// Get the promised result from the future.
+int fourty_two = result.get();
 ```
