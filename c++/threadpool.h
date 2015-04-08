@@ -30,7 +30,7 @@ public:
   // Destroys a thread pool. Must be called from a thread not managed by this 
   // thread pool.
   ~ThreadPool();
-  // Enqueues a task onto the tasks queue. Provides basic exception safety.
+  // Enqueues the specified task. Provides basic exception safety.
   template<class Fn, class ...ArgTypes>
   auto enqueue(Fn &&fn, ArgTypes && ...args) -> std::future<decltype(fn(args...))>;
 private:
