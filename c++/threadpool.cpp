@@ -7,28 +7,31 @@ using std::size_t;
 
 // See header file.
 ThreadPool::ThreadPool(const size_t size) : destroy_(false) {
-  // Creates the specified number of new worker threads.
+  // Set the target function for the ready task predicate.
+  this->ready_task_ = [this] {
+    return this->destroy_ || !this->tasks_.empty();
+  };
+
+  // Create the specified number of new worker threads.
   for (size_t k = 0; k < size; ++k) {
     this->workers_.emplace_back([this] {
-      // Stores this worker thread's assigned task.
+      // This worker thread's assigned task.
       task_t task;
-      // Determines if we need to synchronize this worker thread.
+      // Synchronization state of this worker thread.
       bool synchronize = false;
 
-      // Iterate until this worker thread is signalled to be synchronized.
+      // Iterate until this worker thread is to be synchronized.
       do {
         {
-          // Block the current worker thread until this thread pool is being 
-          // destroyed or there is a task to be invoked.
+          // Block this worker thread until it can accept a task from the 
+          // thread pool.
           std::unique_lock<mutex> lock(this->instance_mutex_);
 
-          this->cond_handle_task_.wait(lock, [this] {
-            return (this->destroy_ || !this->tasks_.empty());
-          });
+          this->cond_handle_task_.wait(lock, this->ready_task_);
 
-          // Determines if we are destroying this thread pool and the tasks 
+          // Determine if we are destroying this thread pool and the tasks 
           // queue is empty. If so, synchronize this worker thread, otherwise 
-          // dequeue the next task and assign it to this worker thread.
+          // dequeue a task and assign it to this worker thread.
           if (this->destroy_ && this->tasks_.empty()) {
             synchronize = true;
           } else {
@@ -38,8 +41,8 @@ ThreadPool::ThreadPool(const size_t size) : destroy_(false) {
           }
         }
 
-        // Determines if we are not synchronizing this worker. If so, invoke 
-        // this worker thread's assigned task.
+        // Determine if we are not synchronizing this worker thread. If so, 
+        // invoke this worker thread's assigned task.
         if (!synchronize) {
           try {
             task();
@@ -61,11 +64,11 @@ ThreadPool::~ThreadPool() {
     this->destroy_ = true;
   }
 
-  // Notify all of the queued worker threads of this state change.
+  // Notify all of the blocked worker threads of this state change.
   this->cond_handle_task_.notify_all();
 
   // Block the current thread until all of the worker threads from this thread 
-  // pool have been synchronized with it.
+  // pool are synchronized.
   for (auto &worker : this->workers_) {
     worker.join();
   }

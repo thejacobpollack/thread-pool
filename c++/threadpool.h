@@ -24,17 +24,17 @@
 
 class ThreadPool final {
 public:
-  // Creates a thread pool with the specified size and initializes each worker 
+  // Create a thread pool with the specified size and initialize each worker 
   // thread. Provides basic exception safety.
   explicit ThreadPool(const std::size_t size);
-  // Destroys a thread pool. Must be called from a thread not managed by this 
+  // Destroy a thread pool. Must be called from a thread not managed by this 
   // thread pool.
   ~ThreadPool();
-  // Enqueues the specified task. Provides basic exception safety.
+  // Enqueue the specified task. Provides basic exception safety.
   template<class Fn, class ...ArgTypes>
   auto enqueue(Fn &&fn, ArgTypes && ...args) -> std::future<decltype(fn(args...))>;
 private:
-  // The type of a task.
+  // Type of a task.
   using task_t = std::function<void()>;
   // Copy constructor disabled.
   ThreadPool(const ThreadPool &) = delete;
@@ -44,16 +44,18 @@ private:
   ThreadPool &operator=(const ThreadPool &) = delete;
   // Move assignment operator disabled.
   ThreadPool &operator=(ThreadPool &&) = delete;
-  // Stores a list of worker threads.
+  // A list of worker threads.
   std::vector<std::thread> workers_;
-  // Stores a queue of tasks to be distributed and invoked.
+  // A queue of tasks to be distributed and invoked.
   std::queue<task_t> tasks_;
-  // Stores a mutex for atomically getting and setting this thread pool's 
-  // fields.
+  // A mutex for atomically getting and setting this thread pool's fields.
   std::mutex instance_mutex_;
-  // Stores the condition used to lock each worker thread until notified to 
-  // invoke its assigned task.
+  // Condition used to lock each worker thread until its been notified that a 
+  // potential task is ready to be assigned to it and invoked.
   std::condition_variable cond_handle_task_;
+  // Determine if this thread pool is being destroyed or there is at least one 
+  // queued tasks to be distributed.
+  std::function<bool()> ready_task_;
   // State of the thread pool.
   bool destroy_;
 };
@@ -61,12 +63,12 @@ private:
 // See declaration above.
 template<class Fn, class ...ArgTypes> 
 inline auto ThreadPool::enqueue(Fn &&fn, ArgTypes && ...args) -> std::future<decltype(fn(args...))> {
-  // Package the specified task in a new copyable managed object and preserve 
-  // each argument's value category.
+  // Package the specified task in to a new copyable managed object and 
+  // preserve each argument's value category.
   auto task = std::make_shared<std::packaged_task<decltype(fn(args...))()>>(
     std::bind(std::forward<Fn>(fn), std::forward<ArgTypes>(args)...)
   );
-  // Get the future return value of the specified task.
+  // Get the promised future return value of the specified task.
   auto retval = task->get_future();
 
   // Enqueue the specified task.

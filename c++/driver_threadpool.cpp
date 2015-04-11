@@ -10,9 +10,9 @@ using std::cout;
 using std::endl;
 
 int main() {
-  // Creates a thread pool with 5 worker threads.
+  // Create a thread pool with 5 worker threads.
   ThreadPool pool(5);
-  // Stores the result of 10 distinct tasks.
+  // Store the result of 10 distinct tasks.
   std::future<int> results[10];
   
   // Enqueue 10 tasks without arguments onto the thread pool.
