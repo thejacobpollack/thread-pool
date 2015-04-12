@@ -1,7 +1,7 @@
 # Thread Pool in C++14
 
-The following package contains an implementation of a simple thread pool in 
-C++14. It does not capitalize on thread affinity, data locality, and other 
+The following package contains an implementation of a simple thread pool module 
+in C++14. It does not capitalize on thread affinity, data locality, and other 
 optimizations.
 
 Used GNU's Compiler Collection version 4.9.2 with the C++14 extension enabled.
